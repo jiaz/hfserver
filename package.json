@@ -1,0 +1,24 @@
+{
+  "name": "hfserver",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "nodemon index.js | bunyan"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "babel": "^5.8.23",
+    "bluebird": "^2.10.2",
+    "bunyan": "^1.5.1",
+    "express": "^4.13.3",
+    "lodash": "^3.10.1",
+    "progress-stream": "^1.1.1",
+    "socket.io": "git+https://github.com/socketio/socket.io.git",
+    "socket.io-stream": "git+https://github.com/nkzawa/socket.io-stream.git"
+  },
+  "devDependencies": {
+    "nodemon": "^1.7.1"
+  }
+}
