@@ -1,4 +1,3 @@
-import express from 'express';
 import io from 'socket.io';
 import ss from 'socket.io-stream';
 import progress from 'progress-stream';
@@ -6,8 +5,7 @@ import http from 'http';
 
 import logger from './logger';
 
-const app = express();
-const server = http.Server(app);
+const server = http.createServer();
 const ioserver = io(server);
 
 const clientMap = new WeakMap();
@@ -26,36 +24,53 @@ class Request {
     }
 }
 
+function registerHandler(socket, cmd, args, cb) {
+    logger.info('get a name: ' + args.name);
+    clientMap.set(socket, args.name);
+    cb(null, 'welcome to the hfserver!');
+}
+
+function lsHandler(socket, cmd, args, cb) {
+    let clientNames = [];
+    ioserver.sockets.sockets.forEach((socket) => {
+        clientNames.push(clientMap.get(socket));
+    });
+    cb(null, clientNames);
+}
+
+function sendHandler(socket, cmd, args, cb) {
+    let [user, file, fileSize] = args;
+    let userSocket = null;
+    ioserver.sockets.sockets.forEach((socket) => {
+        if (clientMap.get(socket) === user) {
+            userSocket = socket;
+        }
+    });
+    if (userSocket === null) {
+        cb(null, 'no such user.');
+    } else {
+        let req = new Request();
+        req.srcFile = file;
+        req.fileSize = fileSize;
+        req.srcClient = socket;
+        req.dstClient = userSocket;
+        pendingRequests[req.id] = req;
+        userSocket.emit('request_file', {file, id: req.id});
+        cb(null, 'request sent.');
+    }
+}
+
+var cmdHandler = {
+    'ls': lsHandler,
+    'send': sendHandler,
+    'register': registerHandler
+};
+
 function processCommand(socket, cmd, args, callback) {
     let result = 'not supported!';
-    if (cmd === 'ls') {
-        let clientNames = [];
-        ioserver.sockets.sockets.forEach((socket) => {
-            clientNames.push(clientMap.get(socket));
-        });
-        result = JSON.stringify(clientNames);
-        callback(null, result);
-    } else if (cmd === 'send') {
-        let [user, file, fileSize] = args;
-        let userSocket = null;
-        ioserver.sockets.sockets.forEach((socket) => {
-            if (clientMap.get(socket) === user) {
-                userSocket = socket;
-            }
-        });
-        if (userSocket === null) {
-            callback(null, 'no such user.');
-        } else {
-            let req = new Request();
-            req.srcFile = file;
-            req.fileSize = fileSize;
-            req.srcClient = socket;
-            req.dstClient = userSocket;
-            pendingRequests[req.id] = req;
-            userSocket.emit('request_file', {file, id: req.id});
-
-            callback(null, 'request sent.');
-        }
+    let handler = cmdHandler[cmd];
+    if (handler) {
+        handler(socket, cmd, args, callback);
     } else {
         callback(null, 'unknown cmd.');
     }
@@ -90,16 +105,10 @@ ioserver.on('connection', (socket) => {
         logger.info('user disconnected.');
     });
 
-    socket.on('register', (data) => {
-        logger.info('get a name: ' + data.name);
-        clientMap.set(socket, data.name);
-        socket.emit('ready', {message: 'welcome to the hfserver!'});
-    });
-
     socket.on('cmd', (data) => {
-        logger.info(`get a cmd: ${data.cmd} with args ${data.args}`);
+        logger.info(`get a cmd: ${data.cmd} [${data.seqId}] with args ${data.args}`);
         processCommand(socket, data.cmd, data.args, (err, res) => {
-            socket.emit('ready', {message: res});
+            socket.emit('ready', {seqId: data.seqId, error: err, response: res});
         });
     });
 

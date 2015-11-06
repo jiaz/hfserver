@@ -16,7 +16,8 @@
     "lodash": "^3.10.1",
     "progress-stream": "^1.1.1",
     "socket.io": "git+https://github.com/socketio/socket.io.git",
-    "socket.io-stream": "git+https://github.com/nkzawa/socket.io-stream.git"
+    "socket.io-stream": "git+https://github.com/nkzawa/socket.io-stream.git",
+    "ws": "^0.8.0"
   },
   "devDependencies": {
     "nodemon": "^1.7.1"
