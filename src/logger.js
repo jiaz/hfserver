@@ -4,23 +4,23 @@ import _ from 'lodash';
 const logger = bunyan.createLogger({name: 'hfserver', level: 'trace'});
 
 const logLevels = {
-    'verbose': 'trace',
-    'debug': 'debug',
-    'info': 'info',
-    'warn': 'warn',
-    'error': 'error',
+  'verbose': 'trace',
+  'debug': 'debug',
+  'info': 'info',
+  'warn': 'warn',
+  'error': 'error',
 };
 
 const defaultLogger = {};
 
 function log(level) {
-    return (...args) => {
-        logger[level].apply(logger, args);
-    };
+  return (...args) => {
+    logger[level].apply(logger, args);
+  };
 }
 
 _.forEach(logLevels, (v, k) => {
-    defaultLogger[k] = log(v);
+  defaultLogger[k] = log(v);
 });
 
 export default defaultLogger;
